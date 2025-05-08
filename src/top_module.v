@@ -13,19 +13,35 @@ module top_module (
     wire [1:0] image_index;
 
     SPI_Master spi (
-        .clk(clk), .reset(0), .miso(miso), .mosi(mosi), .sck(sck), .cs(cs), .data_out(sd_data)
+        .clk(clk),
+        .reset(0), 
+        .miso(miso), 
+        .mosi(mosi), 
+        .sck(sck), 
+        .cs(cs), 
+        .data_out(sd_data)
     );
 
     frame_buffer buffer (
-        .clk(clk), .pixel_data(sd_data), .pixel_addr(pixel_addr), .vga_pixel(pixel_data)
+        .clk(clk), 
+        .pixel_data(sd_data), 
+        .pixel_addr(pixel_addr), 
+        .vga_pixel(pixel_data)
     );
 
     VGA_Controller vga (
-        .clk(clk), .hsync(hsync), .vsync(vsync), .red(red), .green(green), .blue(blue)
+        .clk(clk), 
+        .hsync(hsync), 
+        .vsync(vsync), 
+        .red(red), 
+        .green(green), 
+        .blue(blue)
     );
 
     button_switch btn (
-        .clk(clk), .button(button), .image_index(image_index)
+        .clk(clk), 
+        .button(button), 
+        .image_index(image_index)
     );
 
 endmodule

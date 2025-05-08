@@ -1,9 +1,10 @@
 module VGA_Controller (
     input wire clk,              // 25MHz Clock for VGA
+    input wire [15:0] pixel_data, //pixel from frame buffer
     output reg hsync, vsync,     // VGA Sync signals
     output reg [3:0] red, green, blue, // VGA Color signals
     output reg active_video,      // Active pixel flag
-    output reg [9:0] x, y         // Current pixel coordinates
+    output reg [16:0] read_addr //address to fetch from frame_buffer
 );
 
     reg [9:0] h_count = 0;
@@ -21,17 +22,23 @@ module VGA_Controller (
     always @(*) begin
         hsync = (h_count >= 656 && h_count < 752) ? 0 : 1;
         vsync = (v_count >= 490 && v_count < 492) ? 0 : 1;
-        active_video = (h_count < 640 && v_count < 480);
+        active_video = (h_count < 320 && v_count < 240); //fixed from 640 480
 
+        /*
         x = h_count;   // กำหนดค่าพิกเซลแนวนอน
         y = v_count;   // กำหนดค่าพิกเซลแนวตั้ง
-        
+        */
+
         if (active_video) begin
-            red = 4'b1111;  // แสดงสีแดง
-            green = 4'b0000;
-            blue = 4'b0000;
-        end else begin
+            read_addr = v_count * 320 + h_count; //320 = width
+            //RGB 5-6-5 bits
+            red = pixel_data[15:12];  // แสดงสีแดง
+            green = pixel_data[10:7];
+            blue = pixe_data[4:1];
+        end else begin //if not active_video
+            //set to its default
             red = 0; green = 0; blue = 0;
+            read_arrt = 0;
         end
     end
 endmodule

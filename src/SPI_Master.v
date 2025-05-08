@@ -14,12 +14,17 @@ module SPI_Master (
 );
 
     //parameters
+    //เนื่องจากว่า clk ของ fpga เร็วกว่าของ sdc มาก จึงใช้ตัวหารเพื่อให้ทำงานในความเร็วที่เหมาะสม
+    //ต้องรอ clk ของ fpga กี่ครั้ง จึงจะ toggle sck ครั้งหนึ่ง
     parameter CLK_DIV = 125; //adjust this for sck speed
 
     //internal registers
     reg [7:0] shift_reg; //data register for sending/receiving
     reg [2:0] bit_cnt; //count from 0 to 7 (8 bits)
+
+    //นับจำนวน clk ของ fpga มาเช็คกับ CLK_DIV ว่าครบรอบ 1 clk ของ slave หรือยัง
     reg [7:0] clk_div_cnt; //clock divider counter
+    
     reg sck_int; //internal clock phase (o or 1)
     reg state; // 0 = idle, 1 = transfering
 
@@ -29,12 +34,12 @@ module SPI_Master (
             data_out <= 8'h00;
             bit_cnt <= 3'd0;
             clk_div_cnt <= 8'd0;
-            sck <= 1'b0;
+            sck <= 1'b0; //slave's clock
             mosi <= 1'b1;
-            cs <= 1'b1;
-            busy <= 1'b0;
-            done <= 1'b0;
-            state <= 1'b0;
+            cs <= 1'b1; //not selected anything
+            busy <= 1'b0; //not busy
+            done <= 1'b0; //not done
+            state <= 1'b0; //state 0 idle
         end else begin
             done <= 1'b0;
 
@@ -52,10 +57,10 @@ module SPI_Master (
                     clk_div_cnt <= 0;
                 end
             end else begin //transferring
-                if (clk_div_cnt == CLK_DIV) begin
-                    clk_div_cnt <= 0;
-                    sck_int <= ~sck_int;
-                    sck <= sck_int;
+                if (clk_div_cnt == CLK_DIV) begin //ถ้าครบแล้ว รันครั้งนึง
+                    clk_div_cnt <= 0; //รีเซ็ต เริ่มใหม่
+                    sck_int <= ~sck_int; //toggle
+                    sck <= sck_int; //อัพเดตให้ทำงานแค่ที่ rising edge
 
                     if (sck_int == 1'b1) begin
                         shift_reg <= {shift_reg[6:0], miso};
@@ -71,7 +76,7 @@ module SPI_Master (
                         end
                     end
                 end else begin
-                    clk_div_cnt <= clk_div_cnt + 1;
+                    clk_div_cnt <= clk_div_cnt + 1; //นับเสมอ
                 end
             end
         end
