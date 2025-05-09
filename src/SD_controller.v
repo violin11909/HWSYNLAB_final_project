@@ -55,7 +55,7 @@ module SD_controller (
                 end
                 INIT_START: begin
                     cs <= 0;
-                    spi_data_in ,= 8'h40; //cmd0
+                    spi_data_in <= 8'h40; //cmd0
                     spi_start <= 1;
                     state <= SEND_CMD0;
                 end
