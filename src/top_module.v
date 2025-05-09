@@ -62,7 +62,7 @@ module top_module (
         .spi_data_in(),     // อาจต้องเชื่อมใน design จริง
         .seg_display(seg_display)
     );
-     SevenSegmentDisplay2bit seven_seg_inst (
+     SevenSegmentDisplay5bit seven_seg_inst (
         .Clk(clk),
         .Reset(reset),
         .DataIn(seg_display),

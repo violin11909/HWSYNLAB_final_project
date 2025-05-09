@@ -17,7 +17,7 @@ module SPI_Master (
     //parameters
     //เนื่องจากว่า clk ของ fpga เร็วกว่าของ sdc มาก จึงใช้ตัวหารเพื่อให้ทำงานในความเร็วที่เหมาะสม
     //ต้องรอ clk ของ fpga กี่ครั้ง จึงจะ toggle sck ครั้งหนึ่ง
-    parameter CLK_DIV = 125; //adjust this for sck speed
+    parameter CLK_DIV = 10; //adjust this for sck speed
 
     //internal registers
     reg [7:0] shift_reg; //data register for sending/receiving

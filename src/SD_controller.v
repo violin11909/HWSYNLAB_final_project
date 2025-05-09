@@ -1,6 +1,4 @@
 `timescale 1ns / 1ps
-
-
 module SD_controller (
     input wire clk,
     input wire reset,
@@ -18,8 +16,7 @@ module SD_controller (
     input wire [1:0] image_index,
     input wire delete_flag,
     
-    
-     output reg [1:0] seg_display
+    output reg [4:0] seg_display
 );
 
 parameter IDLE         = 4'd0;
@@ -65,7 +62,7 @@ parameter DONE         = 4'd14;
             block_index <= 0;
             even_byte <= 0;
             
-            seg_display <= 2'b11; //3
+            seg_display <= 5'b00000; //0
         end else begin
             spi_start <= 0;
             write_enable <= 0;
@@ -81,17 +78,17 @@ parameter DONE         = 4'd14;
             end else begin
                 case (state)
                     IDLE: begin
-                        seg_display <= 2'b00; //0
+                    seg_display <= 5'b00001; //1
                         state <= INIT_START;
                     end
                     INIT_START: begin
-                        seg_display <= 2'b00; //0
+                    seg_display <= 5'b00010; //2
                         spi_data_in <= 8'h40;
                         spi_start <= 1;
                         state <= SEND_CMD0;
                     end
                     SEND_CMD0: begin
-                        seg_display <= 2'b00; //0
+                    seg_display <= 5'b00011; //3
                         if (spi_done) begin
                             spi_data_in <= 8'h00;
                             spi_start <= 1;
@@ -99,29 +96,29 @@ parameter DONE         = 4'd14;
                         end
                     end
                     WAIT_CMD0: begin
-                        seg_display <= 2'b01; //1
+                    seg_display <= 5'b00100; //4
                         if (spi_done) begin
                             state <= (spi_data_out == 8'h01) ? SEND_CMD8 : INIT_START;
                         end
                     end
                     SEND_CMD8: begin
-                        seg_display <= 2'b10; //2
+                    seg_display <= 5'b00101; //5
                         spi_data_in <= 8'h48;
                         spi_start <= 1;
                         state <= WAIT_CMD8;
                     end
                     WAIT_CMD8: begin
-                        seg_display <= 2'b11; //3
+                    seg_display <= 5'b00110; //6
                         if (spi_done) state <= SEND_CMD55;
                     end
                     SEND_CMD55: begin
-                        seg_display <= 2'b00;
+                    seg_display <= 5'b00111; //7
                         spi_data_in <= 8'h77;
                         spi_start <= 1;
                         state <= SEND_ACMD41;
                     end
                     SEND_ACMD41: begin
-                        seg_display <= 2'b01;
+                    seg_display <= 5'b01000; //8
                         if (spi_done) begin
                             spi_data_in <= 8'h69;
                             spi_start <= 1;
@@ -129,19 +126,19 @@ parameter DONE         = 4'd14;
                         end
                     end
                     WAIT_ACMD41: begin
-                        seg_display <= 2'b10;
+                    seg_display <= 5'b01001; //9
                         if (spi_done) begin
                             state <= (spi_data_out == 8'h00) ? SEND_CMD16 : SEND_CMD55;
                         end
                     end
                     SEND_CMD16: begin
-                        seg_display <= 2'b11;
+                    seg_display <= 5'b01010; //10
                         spi_data_in <= 8'h50;
                         spi_start <= 1;
                         state <= SEND_CMD17;
                     end
                     SEND_CMD17: begin
-                        seg_display <= 2'b00;
+                    seg_display <= 5'b01011; //11
                         if (spi_done) begin
                             spi_data_in <= 8'h11;
                             spi_start <= 1;
@@ -149,12 +146,12 @@ parameter DONE         = 4'd14;
                         end
                     end
                     WAIT_TOKEN: begin
-                        seg_display <= 2'b01;
+                    seg_display <= 5'b01100; //12
                         if (spi_done && spi_data_out == 8'hFE)
                             state <= READ_BLOCK;
                     end
                     READ_BLOCK: begin
-                        seg_display <= 2'b10;
+                    seg_display <= 5'b01101; //13
                         if (spi_done) begin
                             block_buffer <= spi_data_out;
                             
