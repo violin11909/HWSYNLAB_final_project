@@ -34,11 +34,11 @@ module VGA_Controller (
             //RGB 5-6-5 bits
             red = pixel_data[15:12];  // แสดงสีแดง
             green = pixel_data[10:7];
-            blue = pixe_data[4:1];
+            blue = pixel_data[4:1];
         end else begin //if not active_video
             //set to its default
             red = 0; green = 0; blue = 0;
-            read_arrt = 0;
+            read_addr = 0;
         end
     end
 endmodule

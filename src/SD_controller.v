@@ -16,25 +16,25 @@ module SD_controller (
     input wire delete_flag
 );
 
-    typedef enum logic [3:0] {
-        IDLE = 0,
-        INIT_START = 1,
-        SEND_CMD0 = 2,
-        WAIT_CMD0 = 3,
-        SEND_CMD8 = 4,
-        WAIT_CMD8 = 5,
-        SEND_CMD55 = 6,
-        SEND_ACMD41 = 7,
-        WAIT_ACMD41 = 8,
-        SEND_CMD16 = 9,
-        SEND_CMD17 = 10,
-        WAIT_TOKEN = 11,
-        READ_BLOCK = 12,
-        NEXT_BLOCK = 13,
-        DONE = 14
-    } state_t;
+    // ประกาศค่าของสถานะต่าง ๆ
+parameter IDLE         = 4'd0;
+parameter INIT_START   = 4'd1;
+parameter SEND_CMD0    = 4'd2;
+parameter WAIT_CMD0    = 4'd3;
+parameter SEND_CMD8    = 4'd4;
+parameter WAIT_CMD8    = 4'd5;
+parameter SEND_CMD55   = 4'd6;
+parameter SEND_ACMD41  = 4'd7;
+parameter WAIT_ACMD41  = 4'd8;
+parameter SEND_CMD16   = 4'd9;
+parameter SEND_CMD17   = 4'd10;
+parameter WAIT_TOKEN   = 4'd11;
+parameter READ_BLOCK   = 4'd12;
+parameter NEXT_BLOCK   = 4'd13;
+parameter DONE         = 4'd14;
 
-    state_t state = IDLE;
+    // ใช้ reg เก็บสถานะปัจจุบัน
+    reg [3:0] state;
 
     reg [9:0] byte_cnt = 0;
     reg [7:0] block_buffer;
@@ -139,6 +139,10 @@ module SD_controller (
                     READ_BLOCK: begin
                         if (spi_done) begin
                             block_buffer <= spi_data_out;
+
+                            // PRINT DEBUG
+                            $display("Byte %0d: %02x", byte_cnt, spi_data_out);
+
                             if (even_byte) begin
                                 pixel_data <= {block_buffer, spi_data_out};
                                 pixel_addr <= pixel_addr + 1;

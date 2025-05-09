@@ -3,7 +3,7 @@ module SPI_Master (
     input wire reset,         // Reset signal
     input wire start,         // Trigger transfer เริ่มส่งข้อมูล
     input wire [7:0] data_in, // byte to send
-    output reg [7:0] data_out // Read data
+    output reg [7:0] data_out, // Read data
     output reg done,          // 1 when transfer is done
     output reg busy,
 
