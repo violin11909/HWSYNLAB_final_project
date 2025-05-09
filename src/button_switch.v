@@ -1,48 +1,62 @@
 module button_switch (
-    input wire clk,
-    input wire reset,
-    input wire button,
-    output reg [1:0] image_index // Index ของภาพ
+input wire clk,
+input wire reset,
+input wire left_button,
+input wire right_button,
+output reg [1:0] image_index // Index ของภาพ 0–3 (ถ้า 2 บิต)
 );
 
-    reg [15:0] debounce_cnt = 0;
-    reg button_sync_0 = 0, button_sync_1 = 0;
-    reg button_last = 0;
+// ซิงโครไนซ์และ debounce สำหรับ left_button
+reg left_sync_0 = 0, left_sync_1 = 0, left_last = 0;
+reg [15:0] left_debounce_cnt = 0;
+wire left_rising;
 
-    wire button_rising;
+always @(posedge clk) begin
+    left_sync_0 <= left_button;
+    left_sync_1 <= left_sync_0;
+end
 
-    // 1. synchronize ปุ่มกับ clock domain
-    always @(posedge clk) begin
-        button_sync_0 <= button;
-        button_sync_1 <= button_sync_0;
+always @(posedge clk) begin
+    if (left_sync_1 != left_last) begin
+        left_debounce_cnt <= left_debounce_cnt + 1;
+        if (left_debounce_cnt == 16'hFFFF)
+            left_last <= left_sync_1;
+    end else begin
+        left_debounce_cnt <= 0;
     end
+end
 
-    // 2. debouncer using counter
-    always @(posedge clk) begin
-        if (button_sync_1 != button_last) begin
-            debounce_cnt <= debounce_cnt + 1;
-            if (debounce_cnt == 16'hFFFF)
-                button_last <= button_sync_1;
-        end else begin
-            debounce_cnt <= 0;
-        end
-    end
+assign left_rising = (left_last == 0) && (left_sync_1 == 1);
 
-    // 3. detect rising edge
-    assign button_rising = (button_last == 0) && (button_sync_1 == 1);
+// ซิงโครไนซ์และ debounce สำหรับ right_button
+reg right_sync_0 = 0, right_sync_1 = 0, right_last = 0;
+reg [15:0] right_debounce_cnt = 0;
+wire right_rising;
 
-    // 4. เปลี่ยน image index เมื่อกดปุ่ม
-    always @(posedge clk or posedge reset) begin
-        if (reset)
-            image_index <= 0;
-        else if (button_rising)
-            image_index <= image_index + 1;
+always @(posedge clk) begin
+    right_sync_0 <= right_button;
+    right_sync_1 <= right_sync_0;
+end
+
+always @(posedge clk) begin
+    if (right_sync_1 != right_last) begin
+        right_debounce_cnt <= right_debounce_cnt + 1;
+        if (right_debounce_cnt == 16'hFFFF)
+            right_last <= right_sync_1;
+    end else begin
+        right_debounce_cnt <= 0;
     end
-    
-    /*
-    always @(posedge clk) begin
-        if (button)
-            image_index <= image_index + 1; // กดปุ่มแล้วเปลี่ยนรูป
-    end
-    */
+end
+
+assign right_rising = (right_last == 0) && (right_sync_1 == 1);
+
+// เปลี่ยน image_index
+always @(posedge clk or posedge reset) begin
+    if (reset)
+        image_index <= 0;
+    else if (right_rising)
+        image_index <= image_index + 1;
+    else if (left_rising)
+        image_index <= image_index - 1;
+end
 endmodule
