@@ -1,12 +1,13 @@
 module button_switch (
-input wire clk,
-input wire reset,
-input wire left_button,
-input wire right_button,
-output reg [1:0] image_index // Index ของภาพ 0–3 (ถ้า 2 บิต)
+    input wire clk,
+    input wire reset,
+    input wire left_button,
+    input wire right_button,
+    input wire delete_button,
+    output reg [1:0] image_index,
+    output reg delete_flag
 );
 
-// ซิงโครไนซ์และ debounce สำหรับ left_button
 reg left_sync_0 = 0, left_sync_1 = 0, left_last = 0;
 reg [15:0] left_debounce_cnt = 0;
 wire left_rising;
@@ -28,7 +29,6 @@ end
 
 assign left_rising = (left_last == 0) && (left_sync_1 == 1);
 
-// ซิงโครไนซ์และ debounce สำหรับ right_button
 reg right_sync_0 = 0, right_sync_1 = 0, right_last = 0;
 reg [15:0] right_debounce_cnt = 0;
 wire right_rising;
@@ -50,13 +50,37 @@ end
 
 assign right_rising = (right_last == 0) && (right_sync_1 == 1);
 
-// เปลี่ยน image_index
+reg del_sync_0 = 0, del_sync_1 = 0, del_last = 0;
+reg [15:0] del_debounce_cnt = 0;
+wire delete_rising;
+
+always @(posedge clk) begin
+    del_sync_0 <= delete_button;
+    del_sync_1 <= del_sync_0;
+end
+
+always @(posedge clk) begin
+    if (del_sync_1 != del_last) begin
+        del_debounce_cnt <= del_debounce_cnt + 1;
+        if (del_debounce_cnt == 16'hFFFF)
+            del_last <= del_sync_1;
+    end else begin
+        del_debounce_cnt <= 0;
+    end
+end
+
+assign delete_rising = (del_last == 0) && (del_sync_1 == 1);
+
 always @(posedge clk or posedge reset) begin
-    if (reset)
+    if (reset) begin
         image_index <= 0;
-    else if (right_rising)
-        image_index <= image_index + 1;
-    else if (left_rising)
-        image_index <= image_index - 1;
+        delete_flag <= 0;
+    end else begin
+        delete_flag <= delete_rising;
+        if (right_rising)
+            image_index <= image_index + 1;
+        else if (left_rising)
+            image_index <= image_index - 1;
+    end
 end
 endmodule

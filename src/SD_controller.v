@@ -12,10 +12,10 @@ module SD_controller (
     input wire spi_done,
     input wire [7:0] spi_data_out,
     output reg [7:0] spi_data_in,
-    input wire [1:0] image_index
+    input wire [1:0] image_index,
+    input wire delete_flag
 );
 
-    //FSM
     typedef enum logic [3:0] {
         IDLE = 0,
         INIT_START = 1,
@@ -46,7 +46,6 @@ module SD_controller (
     wire [31:0] base_block_addr = image_index * BLOCKS_PER_IMAGE;
     wire [31:0] block_addr = base_block_addr + block_index;
 
-    //dummy spi output
     assign mosi = 1'b0;
     assign sck = clk;
 
@@ -60,118 +59,118 @@ module SD_controller (
             byte_cnt <= 0;
             block_index <= 0;
             even_byte <= 0;
-        end else begin //not reset
+        end else begin
             spi_start <= 0;
             write_enable <= 0;
 
-            case (state)
-                IDLE: begin
-                    cs <= 1;
-                    state <= INIT_START;
-                end
-                INIT_START: begin
-                    cs <= 0;
-                    spi_data_in <= 8'h40; //cmd0
-                    spi_start <= 1;
-                    state <= SEND_CMD0;
-                end
-                SEND_CMD0: begin
-                    if (spi_done) begin
-                        spi_data_in <= 8'h00; //dummy argument
+            if (delete_flag) begin
+                pixel_addr <= 0;
+                pixel_data <= 16'h0000;
+                write_enable <= 1;
+                if (pixel_addr < BLOCKS_PER_IMAGE * 256)
+                    pixel_addr <= pixel_addr + 1;
+                else
+                    state <= DONE;
+            end else begin
+                case (state)
+                    IDLE: begin
+                        cs <= 1;
+                        state <= INIT_START;
+                    end
+                    INIT_START: begin
+                        cs <= 0;
+                        spi_data_in <= 8'h40;
                         spi_start <= 1;
-                        state <= WAIT_CMD0;
+                        state <= SEND_CMD0;
                     end
-                end
-                WAIT_CMD0: begin
-                    if (spi_done) begin
-                        if (spi_data_out == 8'h01) //idle state
-                            state <= SEND_CMD8;
-                        else
-                            state <= INIT_START; //retry
+                    SEND_CMD0: begin
+                        if (spi_done) begin
+                            spi_data_in <= 8'h00;
+                            spi_start <= 1;
+                            state <= WAIT_CMD0;
+                        end
                     end
-                end
-                SEND_CMD8: begin
-                    spi_data_in <= 8'h48; //CMD8
-                    spi_start <= 1;
-                    state <= WAIT_CMD8;
-                end
-                WAIT_CMD8: begin
-                    if (spi_done) begin
-                        state <= SEND_CMD55;
+                    WAIT_CMD0: begin
+                        if (spi_done) begin
+                            state <= (spi_data_out == 8'h01) ? SEND_CMD8 : INIT_START;
+                        end
                     end
-                end
-                SEND_CMD55: begin
-                    spi_data_in <= 8'h77; //cmd55
-                    spi_state <= 1;
-                    state <= SEND_ACMD41;
-                end
-                SEND_ACMD41: begin
-                    if (spi_done) begin
-                        spi_data_in <= 8'h69; //acmd41
+                    SEND_CMD8: begin
+                        spi_data_in <= 8'h48;
                         spi_start <= 1;
-                        state <= WAIT_ACMD41;
+                        state <= WAIT_CMD8;
                     end
-                end
-                WAIT_ACMD41: begin
-                    if (spi_done) begin
-                        if (spi_data_out == 8'h00)
-                            state <= SEND_CMD16;
-                        else
-                            state <= SEND_CMD55; //retry ACMD41
+                    WAIT_CMD8: begin
+                        if (spi_done) state <= SEND_CMD55;
                     end
-                end
-                SEND_CMD16: begin
-                    spi_data_in <= 8'h50; //cmd16
-                    spi_start <= 1;
-                    state <= SEND_CMD17;
-                end
-                SEND_CMD17: begin
-                    if (spi_done) begin
-                        spi_data_in <= 8'h11 //cmd17 dummy (read block)
+                    SEND_CMD55: begin
+                        spi_data_in <= 8'h77;
+                        spi_start <= 1;
+                        state <= SEND_ACMD41;
+                    end
+                    SEND_ACMD41: begin
+                        if (spi_done) begin
+                            spi_data_in <= 8'h69;
+                            spi_start <= 1;
+                            state <= WAIT_ACMD41;
+                        end
+                    end
+                    WAIT_ACMD41: begin
+                        if (spi_done) begin
+                            state <= (spi_data_out == 8'h00) ? SEND_CMD16 : SEND_CMD55;
+                        end
+                    end
+                    SEND_CMD16: begin
+                        spi_data_in <= 8'h50;
+                        spi_start <= 1;
+                        state <= SEND_CMD17;
+                    end
+                    SEND_CMD17: begin
+                        if (spi_done) begin
+                            spi_data_in <= 8'h11;
+                            spi_start <= 1;
+                            state <= WAIT_TOKEN;
+                        end
+                    end
+                    WAIT_TOKEN: begin
+                        if (spi_done && spi_data_out == 8'hFE)
+                            state <= READ_BLOCK;
+                    end
+                    READ_BLOCK: begin
+                        if (spi_done) begin
+                            block_buffer <= spi_data_out;
+                            if (even_byte) begin
+                                pixel_data <= {block_buffer, spi_data_out};
+                                pixel_addr <= pixel_addr + 1;
+                                write_enable <= 1;
+                            end
+                            even_byte <= ~even_byte;
+                            byte_cnt <= byte_cnt + 1;
+
+                            if (byte_cnt == 511) begin
+                                byte_cnt <= 0;
+                                block_index <= block_index + 1;
+                                even_byte <= 0;
+                                if (block_index == BLOCKS_PER_IMAGE - 1)
+                                    state <= DONE;
+                                else
+                                    state <= NEXT_BLOCK;
+                            end else begin
+                                spi_data_in <= 8'hFF;
+                                spi_start <= 1;
+                            end
+                        end
+                    end
+                    NEXT_BLOCK: begin
+                        spi_data_in <= 8'h11;
                         spi_start <= 1;
                         state <= WAIT_TOKEN;
                     end
-                end
-                WAIT_TOKEN: begin
-                    if (spi_done && spi_data_out == 8'hFE)
-                        state <= READ_BLOCK;
-                end
-                READ_BLOCK: begin
-                    if (spi_done) begin
-                        block_buffer <= spi_data_out;
-                        if (even_byte) begin
-                            pixel_data <= {block_buffer, spi_data_out};
-                            pixel_addr <= pixel_addr + 1;
-                            write_enable <= 1;
-                        end
-                        even_byte <= ~even_byte; //toggle
-                        byte_cnt <= byte_cnt + 1;
-
-                        if (byte_cnt == 511) begin
-                            byte_cnt <= 0;
-                            block_index <= block_index + 1;
-                            even_byte <= 0;
-                            if (block_index == BLOCKS_PER_IMAGE - 1)
-                                state <= DONE;
-                            else
-                                state <= NEXT_BLOCK;
-                        end else begin
-                            spi_data_in <= 8'hFF;
-                            spi_start <= 1;
-                        end
+                    DONE: begin
+                        state <= DONE;
                     end
-                end
-                NEXT_BLOCK: begin
-                    spi_data_in <= 8'h11; //next cmd17
-                    spi_start <= 1;
-                    state <= WAIT_TOKEN;
-                end 
-                DONE: begin
-                    //idle or ready to next block
-                    state <= DONE;
-                end
-            endcase
+                endcase
+            end
         end
     end
-
 endmodule
