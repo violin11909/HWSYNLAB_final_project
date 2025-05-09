@@ -44,7 +44,7 @@ parameter DONE         = 4'd14;
     localparam BLOCKS_PER_IMAGE = 300;
 
     wire [31:0] base_block_addr = image_index * BLOCKS_PER_IMAGE;
-    wire [31:0] block_addr = basse_block_addr + block_index;
+    wire [31:0] block_addr = base_block_addr + block_index;
 
     /*
     assign mosi = 1'b0;
