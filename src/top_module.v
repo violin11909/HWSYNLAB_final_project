@@ -44,9 +44,9 @@ module top_module (
         .reset(reset),
         .image_index(image_index),
         .miso(miso),
-        .mosi(mosi),
-        .sck(sck),
-        .cs(cs),
+        .mosi(spi_mosi), //
+        .sck(spi_sck), //
+        .cs(spi_cs), //
         .pixel_data(write_data),
         .pixel_addr(write_addr),
         .write_enable(write_en),

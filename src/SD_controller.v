@@ -3,8 +3,8 @@ module SD_controller (
     input wire reset,
     input wire miso,
     input wire mosi,
-    output wire sck,
-    output reg cs,
+    input wire sck, //fix output -> input
+    input wire cs, //fix output -> input
     output reg [15:0] pixel_data,
     output reg [16:0] pixel_addr,
     output reg write_enable,
@@ -46,13 +46,14 @@ parameter DONE         = 4'd14;
     wire [31:0] base_block_addr = image_index * BLOCKS_PER_IMAGE;
     wire [31:0] block_addr = base_block_addr + block_index;
 
+    /*
     assign mosi = 1'b0;
     assign sck = clk;
+    */
 
     always @(posedge clk or posedge reset) begin
         if (reset) begin
             state <= IDLE;
-            cs <= 1;
             spi_start <= 0;
             pixel_addr <= 0;
             write_enable <= 0;
@@ -74,11 +75,9 @@ parameter DONE         = 4'd14;
             end else begin
                 case (state)
                     IDLE: begin
-                        cs <= 1;
                         state <= INIT_START;
                     end
                     INIT_START: begin
-                        cs <= 0;
                         spi_data_in <= 8'h40;
                         spi_start <= 1;
                         state <= SEND_CMD0;
