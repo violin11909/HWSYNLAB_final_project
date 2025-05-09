@@ -1,3 +1,4 @@
+`timescale 1ns / 1ps
 module VGA_Controller (
     input wire clk,              // 25MHz Clock for VGA
     input wire [15:0] pixel_data, //pixel from frame buffer

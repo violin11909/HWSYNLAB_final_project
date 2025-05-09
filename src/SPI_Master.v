@@ -1,3 +1,4 @@
+`timescale 1ns / 1ps
 module SPI_Master (
     input wire clk,           // System clock
     input wire reset,         // Reset signal

@@ -1,3 +1,4 @@
+`timescale 1ns / 1ps
 module frame_buffer (
     input wire clk, 
     input wire we, //write enable

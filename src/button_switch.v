@@ -1,3 +1,4 @@
+`timescale 1ns / 1ps
 module button_switch (
     input wire clk,
     input wire reset,
