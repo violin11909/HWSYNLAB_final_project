@@ -34,7 +34,7 @@ parameter NEXT_BLOCK   = 4'd13;
 parameter DONE         = 4'd14;
 
     // ใช้ reg เก็บสถานะปัจจุบัน
-    reg [3:0] state;
+    reg [3:0] state = IDLE;
 
     reg [9:0] byte_cnt = 0;
     reg [7:0] block_buffer;
@@ -44,7 +44,7 @@ parameter DONE         = 4'd14;
     localparam BLOCKS_PER_IMAGE = 300;
 
     wire [31:0] base_block_addr = image_index * BLOCKS_PER_IMAGE;
-    wire [31:0] block_addr = base_block_addr + block_index;
+    wire [31:0] block_addr = basse_block_addr + block_index;
 
     /*
     assign mosi = 1'b0;
@@ -140,7 +140,7 @@ parameter DONE         = 4'd14;
                             block_buffer <= spi_data_out;
 
                             // PRINT DEBUG
-                            $display("Byte %0d: %02x", byte_cnt, spi_data_out);
+                            //$display("Byte %0d: %02x", byte_cnt, spi_data_out);
 
                             if (even_byte) begin
                                 pixel_data <= {block_buffer, spi_data_out};
@@ -170,7 +170,10 @@ parameter DONE         = 4'd14;
                         state <= WAIT_TOKEN;
                     end
                     DONE: begin
-                        state <= DONE;
+                        if (delete_flag)
+                            state <= DONE;
+                        else if (image_index != 0)
+                            state <= IDLE;
                     end
                 endcase
             end

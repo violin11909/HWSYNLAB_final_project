@@ -19,18 +19,25 @@ module top_module (
     wire [1:0] image_index;
     wire delete_flag;
 
-    //declare wire
+    // SPI signals
     wire spi_mosi, spi_sck, spi_cs;
+    wire [7:0] spi_data_in, spi_data_out;
+    wire spi_start, spi_done;
+    wire spi_busy;
 
-    // SPI master
+    // SPI Master
     SPI_Master spi (
         .clk(clk),
         .reset(reset),
-        .miso(miso),
-        .mosi(spi_mosi),
+        .start(spi_start),
+        .data_in(spi_data_in),
+        .data_out(spi_data_out),
+        .done(spi_done),
+        .busy(spi_busy),
         .sck(spi_sck),
-        .cs(spi_cs),
-        .data_out(sd_data)
+        .mosi(spi_mosi),
+        .miso(miso),
+        .cs(spi_cs)
     );
 
     //assign outputs
@@ -43,6 +50,7 @@ module top_module (
         .clk(clk),
         .reset(reset),
         .image_index(image_index),
+        .delete_flag(delete_flag),
         .miso(miso),
         .mosi(spi_mosi), //
         .sck(spi_sck), //
@@ -50,10 +58,10 @@ module top_module (
         .pixel_data(write_data),
         .pixel_addr(write_addr),
         .write_enable(write_en),
-        .spi_start(),         // คุณสามารถเชื่อมต่อกับ SPI master เพิ่มเติมได้ถ้าจำเป็น
-        .spi_done(),          // เช่นจาก SPI master
-        .spi_data_out(sd_data),
-        .spi_data_in()        // อาจต้องเชื่อมใน design จริง
+        .spi_start(spi_start),         // คุณสามารถเชื่อมต่อกับ SPI master เพิ่มเติมได้ถ้าจำเป็น
+        .spi_done(spi_done),          // เช่นจาก SPI master
+        .spi_data_out(spi_data_out),
+        .spi_data_in(spi_data_in)        // อาจต้องเชื่อมใน design จริง
     );
 
     wire [16:0] read_addr;
